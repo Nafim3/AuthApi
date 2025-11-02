@@ -6,7 +6,8 @@ namespace AuthAPI.Services
 {
     public interface IAuthServices
     {
-        Task<string?> LoginUserAsync(UserInfoDTO userInforeq);
+        Task<TokenResponseDto?> LoginUserAsync(UserInfoDTO userInforeq);
+        Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenReqDto userInforeq);
         Task<ActionResult<UserInfo?>> RegisterUserAsync(UserInfoDTO requserinfo);
     }
 }

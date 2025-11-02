@@ -39,7 +39,7 @@ namespace AuthAPI.Controllers
         }
 
         [HttpPost("Login")]
-        public async Task<ActionResult<string>> LoginUser(UserInfoDTO userInforeq)
+        public async Task<ActionResult<TokenResponseDto>> LoginUser(UserInfoDTO userInforeq)
         {
             var GenToken = await services.LoginUserAsync(userInforeq);
             if (GenToken is null)
@@ -49,6 +49,20 @@ namespace AuthAPI.Controllers
 
             return Ok(GenToken);
         }
+
+
+        [HttpPost("RefreshToken")]
+        public async Task<ActionResult<TokenResponseDto>> RefreshToken(RefreshTokenReqDto userInforeq)
+        {
+            var GenToken = await services.RefreshTokenAsync(userInforeq);
+            if (GenToken is null)
+            {
+                return BadRequest("Invalid credentials");
+            }
+
+            return Ok(GenToken);
+        }
+
 
         [HttpGet("AuthorizationEndpoint")]
         [Authorize]

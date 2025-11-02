@@ -10,5 +10,7 @@ namespace AuthAPI.Entities
         [Key]
         public int UserId { get; set; }
         public string? Email { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryDate { get; set; }
     }
 }

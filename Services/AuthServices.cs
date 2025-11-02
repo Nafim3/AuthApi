@@ -1,6 +1,7 @@
 ﻿using AuthAPI.Data;
 using AuthAPI.Entities;
 using AuthAPI.Model;
+using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace AuthAPI.Services
@@ -49,7 +51,7 @@ namespace AuthAPI.Services
         }
 
 
-        public async Task<string?> LoginUserAsync(UserInfoDTO userInforeq)
+        public async Task<TokenResponseDto?> LoginUserAsync(UserInfoDTO userInforeq)
         {
             var userInstantiation = await _context.UsersData.FirstOrDefaultAsync(u => u.Username == userInforeq.Username && u.Email == userInforeq.Email);
             if (userInstantiation is null)
@@ -62,10 +64,26 @@ namespace AuthAPI.Services
                 return null;
             }
 
+            var GenToken = new TokenResponseDto
+            {
+                AccessToken = GenerateToken(userInstantiation),
+                RefreshToken = await GenerateRefreshToken(userInstantiation)
+            }; 
 
-            string GenToken = GenerateToken(userInstantiation);
 
             return GenToken;
+        }
+
+        private async Task<string> GenerateRefreshToken(UserInfo RTuser)
+        {
+            var randomNumber = new byte[32];
+            using var rng  = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            var refreshtoken = Convert.ToBase64String(randomNumber);
+            RTuser.RefreshToken = refreshtoken;
+            RTuser.RefreshTokenExpiryDate = DateTime.UtcNow.AddDays(1);
+            await _context.SaveChangesAsync();
+            return refreshtoken;
         }
 
         private string GenerateToken(UserInfo userInfoTokenReq)
@@ -92,6 +110,22 @@ namespace AuthAPI.Services
 
         }
 
+        public async Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenReqDto userInforeq)
+        {
+            var userInstantiation =  await _context.UsersData.FindAsync(userInforeq.UserId);
+            
+            if (userInstantiation is null || userInstantiation.RefreshToken != userInforeq.RefreshToken 
+                || userInstantiation.RefreshTokenExpiryDate <= DateTime.UtcNow)
+            {
+                return null;
+            }
+            var GenToken = new TokenResponseDto
+            {
+                AccessToken = GenerateToken(userInstantiation),
+                RefreshToken = await GenerateRefreshToken(userInstantiation)
+            };
+            return GenToken;
+        }
 
 
     }
